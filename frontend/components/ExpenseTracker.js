@@ -36,6 +36,7 @@ import {
   Building
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
 
 // ... rest of your App.jsx code exactly as is
@@ -461,12 +462,17 @@ const HomeView = ({
   onSetIncome
 }) => {
   const getTotalExpenses = () => {
+    if (!expenses || !Array.isArray(expenses)) return 0;
     return expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
   };
 
   const getMonthlyData = () => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
+
+    if (!expenses || !Array.isArray(expenses)) {
+      return { expenses: 0, savings: userIncome };
+    }
     
     const monthlyExpenses = expenses.filter(exp => {
       const date = new Date(exp.expense_date);
@@ -483,6 +489,10 @@ const HomeView = ({
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth();
+
+    if (!expenses || !Array.isArray(expenses)) {
+      return [];
+    }
     
     const last6Months = [];
     for (let i = 5; i >= 0; i--) {
@@ -1005,7 +1015,7 @@ const ExpenseTracker = () => {
   const [authMode, setAuthMode] = useState('login');
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [expenses, setExpenses] = useState([]);
+  const [expenses, setExpenses] = useState([]); 
   const [categories, setCategories] = useState([]);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -1044,12 +1054,6 @@ const ExpenseTracker = () => {
   }
 }, []);
 
-useEffect(() => {
-  if (expenses.length > 0) {
-    calculateCategories();
-  }
-}, [expenses]);
-
 // ADD THIS NEW useEffect
 useEffect(() => {
   // Initialize categories with predefined categories on mount
@@ -1074,10 +1078,16 @@ useEffect(() => {
           'Authorization': `Bearer ${authToken || token}`
         }
       });
+      if (!response.ok) {
+        console.error('Failed to fetch expenses:', response.status);
+        setExpenses([]); // Set empty array on error
+        return;
+      }
       const data = await response.json();
-      setExpenses(data);
+      setExpenses(Array.isArray(data) ? data :[]);
     } catch (error) {
       console.error('Error fetching expenses:', error);
+      setExpenses([]);  
     }
   };
 
@@ -1173,8 +1183,8 @@ useEffect(() => {
     try {
       const method = editingExpense ? 'PUT' : 'POST';
       const url = editingExpense 
-        ? `${API_BASE}/expenses/${editingExpense.id}`
-        : `${API_BASE}/expenses`;
+        ? `${API_BASE}/api/expenses/${editingExpense.id}`
+        : `${API_BASE}/api/expenses`;
 
       const response = await fetch(url, {
         method,
@@ -1207,7 +1217,7 @@ useEffect(() => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
 
     try {
-      const response = await fetch(`${API_BASE}/expenses/${id}`, {
+      const response = await fetch(`${API_BASE}/api/expenses/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
