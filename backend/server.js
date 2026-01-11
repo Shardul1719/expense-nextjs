@@ -57,12 +57,34 @@ const app = express();
 connectDB();
 
 // ✅ FIXED CORS CONFIG
+// app.use(cors({
+//   origin: "https://expense-nextjs-one.vercel.app",
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//   credentials: true
+// }));
 app.use(cors({
-  origin: "https://expense-nextjs-one.vercel.app",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    const allowedPatterns = [
+      /^http:\/\/localhost:\d+$/,
+      /^https:\/\/.*\.vercel\.app$/
+    ];
+
+    const isAllowed = allowedPatterns.some((pattern) =>
+      pattern.test(origin)
+    );
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true
 }));
+
 
 // ✅ Handle preflight explicitly
 app.options("*", cors());
