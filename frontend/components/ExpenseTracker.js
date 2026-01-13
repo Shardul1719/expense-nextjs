@@ -1055,21 +1055,44 @@ const ExpenseTracker = () => {
 }, []);
 
 // ADD THIS NEW useEffect
-useEffect(() => {
-  // Initialize categories with predefined categories on mount
-  if (categories.length === 0) {
-    setCategories(PREDEFINED_CATEGORIES.map(cat => ({
-      ...cat,
-      total: 0
-    })));
-  }
-}, []);
+// useEffect(() => {
+//   // Initialize categories with predefined categories on mount
+//   if (categories.length === 0) {
+//     setCategories(PREDEFINED_CATEGORIES.map(cat => ({
+//       ...cat,
+//       total: 0
+//     })));
+//   }
+// }, []);
 
+  // useEffect(() => {
+  //   if (expenses.length > 0) {
+  //     calculateCategories();
+  //   }
+  // }, [expenses]);
   useEffect(() => {
-    if (expenses.length > 0) {
-      calculateCategories();
-    }
+    calculateCategories();
   }, [expenses]);
+
+  // const fetchExpenses = async (authToken) => {
+  //   try {
+  //     const response = await fetch(`${API_BASE}/api/expenses`, {
+  //       headers: {
+  //         'Authorization': `Bearer ${authToken || token}`
+  //       }
+  //     });
+  //     if (!response.ok) {
+  //       console.error('Failed to fetch expenses:', response.status);
+  //       setExpenses([]); // Set empty array on error
+  //       return;
+  //     }
+  //     const data = await response.json();
+  //     setExpenses(Array.isArray(data) ? data :[]);
+  //   } catch (error) {
+  //     console.error('Error fetching expenses:', error);
+  //     setExpenses([]);  
+  //   }
+  // };
 
   const fetchExpenses = async (authToken) => {
     try {
@@ -1080,60 +1103,118 @@ useEffect(() => {
       });
       if (!response.ok) {
         console.error('Failed to fetch expenses:', response.status);
-        setExpenses([]); // Set empty array on error
+        setExpenses([]);
+        // Initialize categories even when there are no expenses
+        setCategories(PREDEFINED_CATEGORIES.map(cat => ({
+          ...cat,
+          total: 0
+        })));
         return;
       }
       const data = await response.json();
-      setExpenses(Array.isArray(data) ? data :[]);
+      const expensesArray = Array.isArray(data) ? data : [];
+      setExpenses(expensesArray);
     } catch (error) {
       console.error('Error fetching expenses:', error);
-      setExpenses([]);  
+      setExpenses([]);
+      // Initialize categories even on error
+      setCategories(PREDEFINED_CATEGORIES.map(cat => ({
+        ...cat,
+        total: 0
+      })));
     }
   };
 
+  // const calculateCategories = () => {
+  //   const categoryTotals = {};
+    
+  //   // Calculate totals from expenses
+  //   expenses.forEach(expense => {
+  //     const cat = expense.category || 'Uncategorized';
+  //       if (!categoryTotals[cat]) {
+  //         categoryTotals[cat] = 0;
+  //       }
+  //       categoryTotals[cat] += parseFloat(expense.amount);
+  //   });
+
+  //   // Always show predefined categories with their totals (0 if no expenses)
+  //   const categoriesData = PREDEFINED_CATEGORIES.map(predefCat => ({
+  //     ...predefCat,
+  //     total: categoryTotals[predefCat.name] || 0
+  //   }));
+
+  //   // Add custom categories from expenses
+  //   Object.keys(categoryTotals).forEach(catName => {
+  //     if (!PREDEFINED_CATEGORIES.find(pc => pc.name === catName)) {
+  //       categoriesData.push({
+  //         name: catName,
+  //         icon: Briefcase,
+  //         color: 'bg-gray-100 text-gray-600',
+  //         total: categoryTotals[catName]
+  //       });
+  //     }
+  //   });
+
+  //   // Add any custom categories that were created but have no expenses yet
+  //   const existingCategoryNames = categoriesData.map(c => c.name);
+  //   categories.forEach(existingCat => {
+  //     if (!existingCategoryNames.includes(existingCat.name)) {
+  //       categoriesData.push({
+  //         ...existingCat,
+  //         total: 0
+  //       });
+  //     }
+  //   });
+
+  //   setCategories(categoriesData);
+  // };
+
   const calculateCategories = () => {
-  const categoryTotals = {};
-  
-  // Calculate totals from expenses
-  expenses.forEach(expense => {
-    const cat = expense.category || 'Uncategorized';
-    if (!categoryTotals[cat]) {
-      categoryTotals[cat] = 0;
-    }
-    categoryTotals[cat] += parseFloat(expense.amount);
-  });
-
-  // Always show predefined categories with their totals (0 if no expenses)
-  const categoriesData = PREDEFINED_CATEGORIES.map(predefCat => ({
-    ...predefCat,
-    total: categoryTotals[predefCat.name] || 0
-  }));
-
-  // Add custom categories from expenses
-  Object.keys(categoryTotals).forEach(catName => {
-    if (!PREDEFINED_CATEGORIES.find(pc => pc.name === catName)) {
-      categoriesData.push({
-        name: catName,
-        icon: Briefcase,
-        color: 'bg-gray-100 text-gray-600',
-        total: categoryTotals[catName]
+    const categoryTotals = {};
+    
+    // Calculate totals from expenses
+    if (expenses && Array.isArray(expenses)) {
+      expenses.forEach(expense => {
+        const cat = expense.category || 'Uncategorized';
+        if (!categoryTotals[cat]) {
+          categoryTotals[cat] = 0;
+        }
+        categoryTotals[cat] += parseFloat(expense.amount);
       });
     }
-  });
 
-  // Add any custom categories that were created but have no expenses yet
-  const existingCategoryNames = categoriesData.map(c => c.name);
-  categories.forEach(existingCat => {
-    if (!existingCategoryNames.includes(existingCat.name)) {
-      categoriesData.push({
-        ...existingCat,
-        total: 0
-      });
-    }
-  });
+    // Always show predefined categories with their totals (0 if no expenses)
+    const categoriesData = PREDEFINED_CATEGORIES.map(predefCat => ({
+      ...predefCat,
+      total: categoryTotals[predefCat.name] || 0
+    }));
 
-  setCategories(categoriesData);
-};
+    // Add custom categories from expenses that aren't in predefined list
+    Object.keys(categoryTotals).forEach(catName => {
+      if (!PREDEFINED_CATEGORIES.find(pc => pc.name === catName)) {
+        categoriesData.push({
+          name: catName,
+          icon: Briefcase,
+          color: 'bg-gray-100 text-gray-600',
+          total: categoryTotals[catName]
+        });
+      }
+    });
+
+    // Add any previously created custom categories that have no expenses yet
+    const existingCategoryNames = categoriesData.map(c => c.name);
+    categories.forEach(existingCat => {
+      const isPredefined = PREDEFINED_CATEGORIES.find(pc => pc.name === existingCat.name);
+      if (!isPredefined && !existingCategoryNames.includes(existingCat.name)) {
+        categoriesData.push({
+          ...existingCat,
+          total: 0
+        });
+      }
+    });
+
+    setCategories(categoriesData);
+  };
 
   const handleAuth = async (e) => {
     e.preventDefault();
