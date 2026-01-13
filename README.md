@@ -2,7 +2,7 @@
 
 A **full-stack Expense Tracker web application** built with **Next.js** to help users track daily expenses and income in a simple, intuitive user interface. The project includes both frontend and backend logic to handle data storage, API routes, and UI rendering.
 
-🔗 **Live Demo:** [https://expense-nextjs-one.vercel.app/](https://expense-nextjs-one.vercel.app/) ([GitHub][1])
+🔗 **Live Demo:** [https://expense-nextjs-one.vercel.app/](https://expense-nextjs-one.vercel.app/) 
 
 ---
 
